@@ -10,6 +10,6 @@ https://artifacthub.io/packages/helm/bitnami/redis-cluster
 # Registry
 Set all necessary variables in values.yaml 
 
-Set AWS S3 bucket options and access key 
-Generate htpasswd file and paste it as configmap in values.yaml 
+Set AWS S3 bucket options and access key  
+Generate htpasswd file and paste it as configmap in values.yaml  
 
