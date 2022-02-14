@@ -1,0 +1,14 @@
+{{- $labels := include "docker-registry.labels" . }}
+{{- range .Values.configmaps }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .name }}
+  labels:
+    {{- $labels | nindent 4 }}
+data:
+  {{- range .data }}
+  {{ .filename }}: {{ toYaml .value | indent 4}}
+  {{- end }}
+---
+{{- end }}

@@ -1,0 +1,134 @@
+# Default values for docker-registry.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 2
+aws:
+  s3_bucket: example-tld-docker-registry
+  region: eu-west-1
+redis:
+  address: redis-cluster.redis:6379
+secrets:
+  - name: registry
+    data:
+      - name: secret
+        value: YWVHdTRvdXF1NWFlZGVpOA==
+      - name: password
+        value: aWVTOEFlTTdYbzhCYWh6aQ== 
+      - name: username
+        value: dXNlcg==
+    stype: Opaque
+  - name: aws
+    data:
+      - name: aws-key
+        value: 
+      - name: aws-secret
+        value: 
+    stype: Opaque
+  - name: redis
+    data:
+      - name: password
+        value: MHIzS3ZxaUFtUg==
+    stype: Opaque
+configmaps:
+  - name: registry-auth
+    assignment: "deployment"
+    data:
+      - filename: htpasswd
+        value: user:$2y$05$TpbyLtpxwK6ElAX.SuCi2OA4o980l4fGU33buA0wGiJeC0EQTJivW 
+        mountPath: /auth
+  - name: retention-manager
+    assignment: "cronjob"
+    data:
+      - filename: config.yaml
+        mountPath: /retention-manager
+        value: |-
+          registry: registry-wolt.example.tld
+          policies:
+            - repository: wavescamp/stub
+              maxTags: 1
+            - repository: test
+              maxTags: 1
+image:
+  repository: registry
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: 2.8
+  date: "1644585874"
+nameOverride: ""
+fullnameOverride: "docker-registry"
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+podAnnotations:
+  linkerd.io/inject: disabled
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 5000
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "1024m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header X-Forwarded-Server $host;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  name: docker-registry
+  namespace: docker-registry
+  # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: registry-wolt.example.tld
+      paths:
+        - backend:
+            serviceName: docker-registry
+            servicePort: 5000
+          path: /
+  tls:
+    - hosts:
+        - registry-wolt.example.tld
+      secretName: prod-tls
+resources:
+  limits:
+    cpu: 500m
+    ephemeral-storage: 200Mi
+    memory: 1500Mi
+  requests:
+    cpu: 100m
+    memory: 150Mi
+livenessProbe:
+  failureThreshold: 2
+  httpGet:
+    path: /
+    port: 5000
+    scheme: HTTP
+  initialDelaySeconds: 5
+  periodSeconds: 30
+  successThreshold: 1
+  timeoutSeconds: 1
+readinessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /
+    port: 5000
+    scheme: HTTP
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  successThreshold: 1
+  timeoutSeconds: 1
+nodeSelector: {}
+tolerations: []
+affinity: {}
